@@ -1,4 +1,4 @@
-from newcanic.utils import distance_between
+from newchanic.utils import distance_between
 
 
 def test_distance_between1():

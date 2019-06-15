@@ -9,8 +9,8 @@ from typing import List, Tuple
 
 import pygame
 
-from physics import Particle, Law
-from utils import Number
+from .physics import Particle, Law
+from .utils import Number
 
 
 class GraphicalParticle(Particle):

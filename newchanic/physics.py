@@ -1,6 +1,6 @@
 from typing import Tuple, List
 
-from utils import Number
+from .utils import Number
 
 
 class Particle:
