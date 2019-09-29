@@ -36,8 +36,8 @@ class GraphicalParticle(Particle):
     def graphical_position(self):
         self.old_graphical_position = self.present_graphical_position
         self.present_graphical_position = (
-            (self.position[0] / self.universe.zoom_level) + (self.universe.width / 2),
-            (self.position[1] / self.universe.zoom_level) + (self.universe.height / 2),
+            (self._position[0] / self.universe.zoom_level) + (self.universe.width / 2),
+            (self._position[1] / self.universe.zoom_level) + (self.universe.height / 2),
         )
         return self.present_graphical_position
 
@@ -182,7 +182,7 @@ class Universe:
                 alive_particles = [p for p in self._units if p.is_alive]
                 self.ask_for_text_display(str(len(alive_particles)))
                 self.ask_for_text_display(
-                    str(round(sum([(sum(p.velocity) / 2) * p.mass for p in alive_particles]), 5))
+                    str(round(sum([(sum(p._velocity) / 2) * p._mass for p in alive_particles]), 5))
                 )
 
                 self.erase_text()

@@ -1,24 +1,62 @@
-from typing import Tuple, List
+from typing import List
 
-from .utils import Number
+from utils import Number
 
 
-class Particle:
+class DelayedUpdateMixin:
+    def __init__(self):
+        self._next_values = {}
+
+    def delay_update(self, field: str, value):
+        self._next_values[field] = value
+
+    def update(self):
+        for field, value in self._next_values.items():
+            setattr(self, field, value)
+
+
+class ReadOnlyParticle:
+    @property
+    def mass(self) -> Number:
+        raise NotImplementedError
+
+    @property
+    def position(self):
+        raise NotImplementedError
+
+
+class Particle(DelayedUpdateMixin, ReadOnlyParticle):
     def __init__(self, mass: Number, position: List[Number], velocity: List[Number]):
-        self.mass = mass
-        self.position = position
-        self.velocity = velocity
-        self.is_alive = True
+        assert len(position) == len(velocity)
+        super().__init__()
+        self._mass = mass
+        self._position = position
+        self._velocity = velocity
 
-    def apply_force(self, force: Tuple[Number, Number]):
-        for i in range(len(force)):
-            self.velocity[i] += force[i] / self.mass
+    @property
+    def mass(self):
+        return self._mass
 
-    def exist(self):
-        for i in range(len(self.position)):
-            self.position[i] += self.velocity[i]
+    @property
+    def position(self):
+        return self._position
+
+    def _receive_dimensional_force(self, dimensional_force: Number, dimension: int):
+        self._velocity[dimension] += dimensional_force / self._mass
+
+    def apply_force(self, force: List[Number], other: "Particle"):
+        assert len(force) == len(self._velocity)
+        for dimension, dimensional_force in enumerate(force):
+            other._receive_dimensional_force(dimensional_force, dimension)
+            self._receive_dimensional_force(-dimensional_force, dimension)
+
+    def run(self):
+        next_position = self._position
+        for i, (dimensional_position, dimensional_velocity) in enumerate(zip(self._position, self._velocity)):
+            next_position[i] = dimensional_position + dimensional_velocity
+        self.delay_update("position", next_position)
 
 
-class Law:
-    def compute_force(self, particle: Particle, other_particle: Particle) -> Tuple[Number, Number]:
+class ForceGenerator:
+    def compute_force(self, particle: ReadOnlyParticle, other_particle: ReadOnlyParticle) -> List[Number]:
         raise NotImplementedError
