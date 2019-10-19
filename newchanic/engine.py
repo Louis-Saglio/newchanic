@@ -25,13 +25,26 @@ def random_between(param, param1):
 
 
 class Engine:
-    def __init__(self):
+    def __init__(self, particle_type: type = Particle, particle_kwargs=None):
+        self.particle_kwargs = particle_kwargs
+        self.particle_type = particle_type
         self.particles = self.init_particles()
         self.force_generators = self.init_force_generators()
 
-    @staticmethod
-    def init_particles(particle_nbr=100) -> List[Particle]:
-        return [Particle(random_between(0, 20), [random_between(-100, 100), random_between(-100, 100)], [0, 0]) for _ in range(particle_nbr)]
+    def init_particles(self, particle_nbr=100) -> List[Particle]:
+        # todo : carefully think this generic
+        return [
+            self.particle_type(
+                random_between(0, 20),
+                [random_between(-100, 100), random_between(-100, 100)],
+                [0, 0],
+                **(self.particle_kwargs or {})
+            )
+            for _ in range(particle_nbr)
+        ]
+
+    def run_custom_engine_features(self):
+        pass
 
     def run(self):
         while True:
@@ -45,6 +58,7 @@ class Engine:
                         total_force[dimension] = dimensional_total_force + dimensional_force
             for particle in self.particles:
                 particle.update()
+            self.run_custom_engine_features()
 
     @staticmethod
     def init_force_generators() -> List[ForceGenerator]:
@@ -60,4 +74,4 @@ class Engine:
         return [Gravity()]
 
 
-Engine().run()
+# Engine().run()
