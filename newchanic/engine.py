@@ -30,6 +30,7 @@ class Engine:
         self.particle_type = particle_type
         self.particles = self.init_particles()
         self.force_generators = self.init_force_generators()
+        self._keep_running = True
 
     def init_particles(self, particle_nbr=100) -> List[Particle]:
         # todo : carefully think this generic
@@ -47,7 +48,7 @@ class Engine:
         pass
 
     def run(self):
-        while True:
+        while self._keep_running:
             for particle_1, particle_2 in itertools.combinations(self.particles, 2):
                 total_force = None
                 for force_generator in self.force_generators:

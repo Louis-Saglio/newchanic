@@ -1,6 +1,6 @@
 from random import randint
 from tkinter import Tk
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Dict, Callable
 
 import pygame
 
@@ -10,6 +10,12 @@ from utils import Number
 
 
 class CachedPropertiesMixin:
+    def get_or_create(self, attr: str):
+        try:
+            return getattr(self, f"_{attr}")
+        except AttributeError:
+            return self.get_updated(attr)
+
     def get_cached(self, attr: str):
         return getattr(self, f"_{attr}", None)
 
@@ -31,7 +37,7 @@ class GraphicalOptions:
         if window_size:
             return window_size
         screen = Tk()
-        return screen.winfo_screenheight(), screen.winfo_screenwidth()
+        return screen.winfo_screenwidth(), screen.winfo_screenheight()
 
 
 class GraphicalParticle(Particle, CachedPropertiesMixin):
@@ -39,8 +45,7 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
         super().__init__(mass, position, velocity)
         self.options = options
 
-    @property
-    def color(self):
+    def compute_color(self):
         return randint(0, 255), randint(0, 255), randint(0, 255)
 
     def compute_size(self) -> int:
@@ -56,7 +61,11 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
 
 class GraphicalEngine(Engine):
+
     def __init__(self, window_size: Tuple[Number, Number] = None):
+        self._event_listeners: Dict[int, Callable] = {
+            pygame.QUIT: GraphicalEngine.quit
+        }
         self.particles: List[GraphicalParticle]
         self.options = GraphicalOptions(window_size)
         self._window = pygame.display.set_mode(self.options.size)
@@ -64,14 +73,22 @@ class GraphicalEngine(Engine):
 
     def run_custom_engine_features(self):
         self.update_particles()
+        for event in pygame.event.get():
+            event_listener = self._event_listeners.get(event.type)
+            if callable(event_listener):
+                event_listener(self, event)
+        pygame.display.flip()
+
+    def quit(self, event):
+        self._keep_running = False
 
     def update_particles(self):
         particle: GraphicalParticle
         for particle in self.particles:
             pygame.draw.circle(
                 self._window,
-                particle.color,
-                particle.get_updated("graphical_position"),
+                particle.get_or_create("color"),
+                [int(i) for i in particle.get_updated("graphical_position")],
                 particle.get_updated("size"),
                 particle.get_cached("size"),
             )
@@ -82,7 +99,7 @@ class GraphicalEngine(Engine):
             pygame.draw.circle(
                 self._window,
                 self.options.background_color,
-                particle.get_cached("graphical_position"),
+                [int(i) for i in particle.get_updated("graphical_position")],
                 particle.get_cached("size"),
                 particle.get_cached("size"),
             )
