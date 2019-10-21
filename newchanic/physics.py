@@ -41,6 +41,10 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
     def position(self):
         return self._position
 
+    @position.setter
+    def position(self, value):
+        self._position = value
+
     def _receive_dimensional_force(self, dimensional_force: Number, dimension: int):
         self._velocity[dimension] += dimensional_force / self._mass
 
@@ -55,6 +59,11 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
         for i, (dimensional_position, dimensional_velocity) in enumerate(zip(self._position, self._velocity)):
             next_position[i] = dimensional_position + dimensional_velocity
         self.delay_update("position", next_position)
+
+    def __repr__(self):
+        velocity = [round(v, 3) for v in self._velocity]
+        position = [round(p, 3) for p in self._position]
+        return f"{self.__class__.__name__}(mass={self.mass}, velocity={velocity}, position={position})"
 
 
 class ForceGenerator:

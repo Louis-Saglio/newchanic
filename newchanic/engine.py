@@ -1,3 +1,4 @@
+import time
 from math import sqrt
 from random import random
 from typing import List
@@ -21,7 +22,8 @@ def compute_multi_dimensional_distance(position_1, position_2):
 
 
 def random_between(param, param1):
-    return random() * param + abs(param - param1)
+    assert param < param1
+    return random() * abs(param - param1) + param
 
 
 class Engine:
@@ -36,8 +38,8 @@ class Engine:
         # todo : carefully think this generic
         return [
             self.particle_type(
-                random_between(0, 20),
-                [random_between(-100, 100), random_between(-100, 100)],
+                random_between(15, 30),
+                [random_between(-1000, 1000), random_between(-500, 500)],
                 [0, 0],
                 **(self.particle_kwargs or {})
             )
@@ -49,17 +51,24 @@ class Engine:
 
     def run(self):
         while self._keep_running:
-            for particle_1, particle_2 in itertools.combinations(self.particles, 2):
-                total_force = None
-                for force_generator in self.force_generators:
-                    force = force_generator.compute_force(particle_1, particle_2)
-                    if total_force is None:
-                        total_force = force
-                    for dimension, (dimensional_total_force, dimensional_force) in enumerate(zip(total_force, force)):
-                        total_force[dimension] = dimensional_total_force + dimensional_force
-            for particle in self.particles:
-                particle.update()
-            self.run_custom_engine_features()
+            for particle_1 in self.particles:
+                for particle_2 in self.particles:
+                    if particle_1 is not particle_2:
+                        total_force = None
+                        for force_generator in self.force_generators:
+                            force = force_generator.compute_force(particle_1, particle_2)
+                            if total_force is None:
+                                total_force = force
+                            for dimension, (dimensional_total_force, dimensional_force) in enumerate(
+                                zip(total_force, force)
+                            ):
+                                total_force[dimension] = dimensional_total_force + dimensional_force
+                        particle_1.apply_force(total_force, particle_2)
+                        particle_1.run()
+                    for particle in self.particles:
+                        particle.update()
+                    self.run_custom_engine_features()
+                    # time.sleep(0.01)
 
     @staticmethod
     def init_force_generators() -> List[ForceGenerator]:
@@ -69,7 +78,7 @@ class Engine:
                 force = particle.mass * other_particle.mass / distance ** 2
                 vector_force = []
                 for p1_dimensional_position, p2_dimensional_position in zip(particle.position, other_particle.position):
-                    vector_force.append((p2_dimensional_position - p1_dimensional_position) * force / distance)
+                    vector_force.append((p1_dimensional_position - p2_dimensional_position) * force / distance)
                 return vector_force
 
         return [Gravity()]
