@@ -55,7 +55,7 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
             self._receive_dimensional_force(-dimensional_force, dimension)
 
     def run(self):
-        next_position = self._position
+        next_position = self._position.copy()
         for i, (dimensional_position, dimensional_velocity) in enumerate(zip(self._position, self._velocity)):
             next_position[i] = dimensional_position + dimensional_velocity
         self.delay_update("position", next_position)

@@ -1,12 +1,8 @@
-import time
 from math import sqrt
 from random import random
 from typing import List
 
 from physics import Particle, ForceGenerator, ReadOnlyParticle
-
-import itertools
-
 from utils import Number
 
 
@@ -65,10 +61,9 @@ class Engine:
                                 total_force[dimension] = dimensional_total_force + dimensional_force
                         particle_1.apply_force(total_force, particle_2)
                         particle_1.run()
-                    for particle in self.particles:
-                        particle.update()
-                    self.run_custom_engine_features()
-                    # time.sleep(0.01)
+            for particle in self.particles:
+                particle.update()
+            self.run_custom_engine_features()
 
     @staticmethod
     def init_force_generators() -> List[ForceGenerator]:
