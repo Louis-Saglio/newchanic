@@ -32,9 +32,10 @@ class GraphicalOptions:
         self.zoom_level: Number = 1
         self.represented_dimensions: Tuple[Number, Number] = (0, 1)
         self.background_color = (0, 0, 0)
+        self.shift_level = [0, 0]
 
     @staticmethod
-    def get_window_size(window_size: Optional[Tuple[Number, Number]] = None):
+    def get_window_size(window_size: Optional[Tuple[Number, Number]] = None) -> Tuple[Number, Number]:
         if window_size:
             return window_size
         screen = Tk()
@@ -56,9 +57,9 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
     def compute_graphical_position(self) -> Tuple[Number, Number]:
         return (
             (self._position[self.options.represented_dimensions[0]] / self.options.zoom_level)
-            + (self.options.size[0] / 2),
+            + (self.options.size[0] / 2) + self.options.shift_level[0],
             (self._position[self.options.represented_dimensions[1]] / self.options.zoom_level)
-            + (self.options.size[1] / 2),
+            + (self.options.size[1] / 2) + self.options.shift_level[1],
         )
 
 
@@ -67,7 +68,8 @@ class GraphicalEngine(Engine):
     def __init__(self, window_size: Tuple[Number, Number] = None):
         self._event_listeners: Dict[int, Callable] = {
             pygame.QUIT: self.quit,
-            pygame.MOUSEBUTTONDOWN: self.zoom
+            pygame.MOUSEBUTTONDOWN: self.zoom,
+            pygame.KEYDOWN: self.shift_view,
         }
         self.particles: List[GraphicalParticle]
         self.options = GraphicalOptions(window_size)
@@ -94,6 +96,16 @@ class GraphicalEngine(Engine):
             self.options.zoom_level *= 0.9
         elif event.button == 5:
             self.options.zoom_level *= 1.1
+
+    def shift_view(self, event):
+        if event.key == pygame.K_DOWN:
+            self.options.shift_level[1] += 100
+        elif event.key == pygame.K_UP:
+            self.options.shift_level[1] -= 100
+        elif event.key == pygame.K_RIGHT:
+            self.options.shift_level[0] += 100
+        elif event.key == pygame.K_LEFT:
+            self.options.shift_level[0] -= 100
 
     def update_particles(self):
         particle: GraphicalParticle
