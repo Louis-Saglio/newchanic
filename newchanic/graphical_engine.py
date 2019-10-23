@@ -1,3 +1,4 @@
+from math import log, sqrt
 from random import randint
 from tkinter import Tk
 from typing import Tuple, Optional, List, Dict, Callable
@@ -44,12 +45,13 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
     def __init__(self, mass: Number, position: List[Number], velocity: List[Number], options: GraphicalOptions):
         super().__init__(mass, position, velocity)
         self.options = options
+        self.old_position: List[Number]
 
     def compute_color(self):
         return randint(0, 255), randint(0, 255), randint(0, 255)
 
     def compute_size(self) -> int:
-        return 3
+        return round(log(sqrt(self.mass)))
 
     def compute_graphical_position(self) -> Tuple[Number, Number]:
         return (
@@ -64,7 +66,8 @@ class GraphicalEngine(Engine):
 
     def __init__(self, window_size: Tuple[Number, Number] = None):
         self._event_listeners: Dict[int, Callable] = {
-            pygame.QUIT: GraphicalEngine.quit
+            pygame.QUIT: self.quit,
+            pygame.MOUSEBUTTONDOWN: self.zoom
         }
         self.particles: List[GraphicalParticle]
         self.options = GraphicalOptions(window_size)
@@ -72,15 +75,25 @@ class GraphicalEngine(Engine):
         super().__init__(GraphicalParticle, {"options": self.options})
 
     def run_custom_engine_features(self):
+        try:
+            self.erase_particles()
+        except TypeError:
+            pass
         self.update_particles()
         for event in pygame.event.get():
             event_listener = self._event_listeners.get(event.type)
             if callable(event_listener):
-                event_listener(self, event)
+                event_listener(event)
         pygame.display.flip()
 
     def quit(self, event):
         self._keep_running = False
+
+    def zoom(self, event):
+        if event.button == 4:
+            self.options.zoom_level *= 0.9
+        elif event.button == 5:
+            self.options.zoom_level *= 1.1
 
     def update_particles(self):
         particle: GraphicalParticle
@@ -99,7 +112,7 @@ class GraphicalEngine(Engine):
             pygame.draw.circle(
                 self._window,
                 self.options.background_color,
-                [int(i) for i in particle.get_updated("graphical_position")],
+                [int(i) for i in particle.get_cached("graphical_position")],
                 particle.get_cached("size"),
                 particle.get_cached("size"),
             )
