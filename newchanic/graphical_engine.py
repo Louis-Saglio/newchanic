@@ -1,7 +1,7 @@
 from math import log, sqrt
 from random import randint
 from tkinter import Tk
-from typing import Tuple, Optional, List, Dict, Callable
+from typing import Tuple, Optional, List, Dict, Callable, Union
 
 import pygame
 
@@ -33,7 +33,7 @@ class GraphicalOptions:
         self.represented_dimensions: Tuple[Number, Number] = (0, 1)
         self.background_color = (0, 0, 0)
         self.shift_level = [0, 0]
-        self.draw_trajectories = True
+        self.draw_trajectories = False
 
     @staticmethod
     def get_window_size(window_size: Optional[Tuple[Number, Number]] = None) -> Tuple[Number, Number]:
@@ -69,10 +69,16 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
 class GraphicalEngine2D(Engine):
     def __init__(self, window_size: Tuple[Number, Number] = None):
-        self._event_listeners: Dict[int, Callable] = {
+        self._event_listeners: Dict[int, Union[Callable, Dict[int, Tuple[Callable, Tuple]]]] = {
             pygame.QUIT: self.quit,
-            pygame.MOUSEBUTTONDOWN: self.zoom,
-            pygame.KEYDOWN: self.shift_view,
+            pygame.KEYDOWN: {
+                pygame.K_KP_PLUS: (self.zoom, (1.1,)),
+                pygame.K_KP_MINUS: (self.zoom, (0.9,)),
+                pygame.K_UP: (self.shift_view, ((0, 100),)),
+                pygame.K_DOWN: (self.shift_view, ((0, -100),)),
+                pygame.K_LEFT: (self.shift_view, ((100, 0),)),
+                pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
+            },
         }
         self.particles: List[GraphicalParticle]
         self.options = GraphicalOptions(window_size)
@@ -86,31 +92,27 @@ class GraphicalEngine2D(Engine):
         self._must_erase = not self.options.draw_trajectories
         self.update_particles()
         for event in pygame.event.get():
-            event_listener = self._event_listeners.get(event.type)
-            if callable(event_listener):
-                print(event)
-                event_listener(event)
+            if event.type == pygame.KEYDOWN:
+                self.dispatch_keydown(event)
+            elif event.type == pygame.QUIT:
+                self.quit()
         pygame.display.flip()
 
-    def quit(self, event):
+    def dispatch_keydown(self, event):
+        function, parameters = self._event_listeners[pygame.KEYDOWN].get(event.key, (None, None))
+        if function is not None:
+            function(*parameters)
+
+    def quit(self):
         self._keep_running = False
 
-    def zoom(self, event):
-        if event.button == 4:
-            self.options.zoom_level *= 0.9
-        elif event.button == 5:
-            self.options.zoom_level *= 1.1
+    def zoom(self, factor: Number):
+        self.options.zoom_level *= factor
         self._must_erase = True
 
-    def shift_view(self, event):
-        if event.key == pygame.K_DOWN:
-            self.options.shift_level[1] -= 100
-        elif event.key == pygame.K_UP:
-            self.options.shift_level[1] += 100
-        elif event.key == pygame.K_RIGHT:
-            self.options.shift_level[0] -= 100
-        elif event.key == pygame.K_LEFT:
-            self.options.shift_level[0] += 100
+    def shift_view(self, shift: Tuple[Number, Number]):
+        self.options.shift_level[0] += shift[0]
+        self.options.shift_level[1] += shift[1]
         self._must_erase = True
 
     def update_particles(self):
@@ -125,7 +127,6 @@ class GraphicalEngine2D(Engine):
             )
 
     def erase_particles(self):
-        particle: GraphicalParticle
         self._window.fill(self.options.background_color)
 
 
