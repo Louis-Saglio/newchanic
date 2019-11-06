@@ -1,6 +1,6 @@
 from math import sqrt
 from random import random
-from typing import List
+from typing import List, Type
 
 from physics import Particle, ForceGenerator, ReadOnlyParticle
 from utils import Number
@@ -23,14 +23,14 @@ def random_between(param, param1):
 
 
 class Engine:
-    def __init__(self, particle_type: type = Particle, particle_kwargs=None):
+    def __init__(self, particle_type: Type[Particle] = Particle, particle_kwargs=None):
         self.particle_kwargs = particle_kwargs
         self.particle_type = particle_type
         self.particles = self.init_particles()
         self.force_generators = self.init_force_generators()
         self._keep_running = True
 
-    def init_particles(self, particle_nbr=100) -> List[Particle]:
+    def init_particles(self, particle_nbr=200) -> List[Particle]:
         # todo : carefully think this generic
         return [
             self.particle_type(
@@ -68,15 +68,14 @@ class Engine:
     @staticmethod
     def init_force_generators() -> List[ForceGenerator]:
         class Gravity(ForceGenerator):
+            g = 0.05
+
             def compute_force(self, particle: ReadOnlyParticle, other_particle: ReadOnlyParticle) -> List[Number]:
                 distance = compute_multi_dimensional_distance(particle.position, other_particle.position)
-                force = particle.mass * other_particle.mass / distance ** 2
+                force = self.g * particle.mass * other_particle.mass / distance ** 2
                 vector_force = []
                 for p1_dimensional_position, p2_dimensional_position in zip(particle.position, other_particle.position):
                     vector_force.append((p1_dimensional_position - p2_dimensional_position) * force / distance)
                 return vector_force
 
         return [Gravity()]
-
-
-# Engine().run()

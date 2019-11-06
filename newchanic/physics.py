@@ -26,7 +26,7 @@ class ReadOnlyParticle:
 
 
 class Particle(DelayedUpdateMixin, ReadOnlyParticle):
-    def __init__(self, mass: Number, position: List[Number], velocity: List[Number]):
+    def __init__(self, mass: Number, position: List[Number], velocity: List[Number], *args, **kwargs):
         assert len(position) == len(velocity)
         super().__init__()
         self._mass = mass

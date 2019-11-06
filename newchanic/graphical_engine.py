@@ -1,4 +1,4 @@
-from math import log, sqrt
+from math import sqrt
 from random import randint
 from tkinter import Tk
 from typing import Tuple, Optional, List, Dict, Callable, Union
@@ -13,12 +13,12 @@ from utils import Number
 class CachedPropertiesMixin:
     def get_or_create(self, attr: str):
         try:
-            return getattr(self, f"_{attr}")
+            return self.get_cached(attr)
         except AttributeError:
             return self.get_updated(attr)
 
     def get_cached(self, attr: str):
-        return getattr(self, f"_{attr}", None)
+        return getattr(self, f"_{attr}")
 
     def get_updated(self, attr: str):
         value = getattr(self, f"compute_{attr}")()
@@ -29,7 +29,7 @@ class CachedPropertiesMixin:
 class GraphicalOptions:
     def __init__(self, window_size: Tuple[Number, Number] = None):
         self.size = self.get_window_size(window_size)
-        self.zoom_level: Number = 5
+        self.zoom_level: Number = 1
         self.represented_dimensions: Tuple[Number, Number] = (0, 1)
         self.background_color = (0, 0, 0)
         self.shift_level = [0, 0]
@@ -51,10 +51,10 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
     @staticmethod
     def compute_color():
-        return randint(0, 255), randint(0, 255), randint(0, 255)
+        return randint(50, 255), randint(50, 255), randint(50, 255)
 
     def compute_size(self) -> int:
-        return round(log(sqrt(self.mass)))
+        return round(sqrt(self.mass / (self.options.zoom_level * 7)))
 
     def compute_graphical_position(self) -> Tuple[Number, Number]:
         return (
@@ -72,12 +72,13 @@ class GraphicalEngine2D(Engine):
         self._event_listeners: Dict[int, Union[Callable, Dict[int, Tuple[Callable, Tuple]]]] = {
             pygame.QUIT: self.quit,
             pygame.KEYDOWN: {
-                pygame.K_KP_PLUS: (self.zoom, (1.1,)),
-                pygame.K_KP_MINUS: (self.zoom, (0.9,)),
+                pygame.K_KP_MINUS: (self.zoom, (1.1,)),
+                pygame.K_KP_PLUS: (self.zoom, (0.9,)),
                 pygame.K_UP: (self.shift_view, ((0, 100),)),
                 pygame.K_DOWN: (self.shift_view, ((0, -100),)),
                 pygame.K_LEFT: (self.shift_view, ((100, 0),)),
                 pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
+                pygame.K_SPACE: (self.reset_camera, ())
             },
         }
         self.particles: List[GraphicalParticle]
@@ -115,6 +116,10 @@ class GraphicalEngine2D(Engine):
         self.options.shift_level[1] += shift[1]
         self._must_erase = True
 
+    def reset_camera(self):
+        self.options.shift_level[0], self.options.shift_level[1], self.options.zoom_level = 0, 0, 1
+        self._must_erase = True
+
     def update_particles(self):
         particle: GraphicalParticle
         for particle in self.particles:
@@ -122,7 +127,7 @@ class GraphicalEngine2D(Engine):
                 self._window,
                 particle.get_or_create("color"),
                 [int(i) for i in particle.get_updated("graphical_position")],
-                particle.get_updated("size"),
+                particle.get_or_create("size"),
                 particle.get_cached("size"),
             )
 
