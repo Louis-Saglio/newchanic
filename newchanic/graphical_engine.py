@@ -78,7 +78,7 @@ class GraphicalEngine2D(Engine):
                 pygame.K_DOWN: (self.shift_view, ((0, -100),)),
                 pygame.K_LEFT: (self.shift_view, ((100, 0),)),
                 pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
-                pygame.K_SPACE: (self.reset_camera, ())
+                pygame.K_SPACE: (self.reset_camera, ()),
             },
         }
         self.particles: List[GraphicalParticle]
@@ -127,8 +127,8 @@ class GraphicalEngine2D(Engine):
                 self._window,
                 particle.get_or_create("color"),
                 [int(i) for i in particle.get_updated("graphical_position")],
-                particle.get_or_create("size"),
-                particle.get_cached("size"),
+                particle.get_updated("size"),
+                particle.get_updated("size"),
             )
 
     def erase_particles(self):

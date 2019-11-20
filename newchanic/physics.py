@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Set
 
 from utils import Number
 
@@ -12,7 +12,10 @@ class DelayedUpdateMixin:
 
     def update(self):
         for field, value in self._next_values.items():
-            setattr(self, field, value)
+            try:
+                setattr(self, field, value)
+            except AttributeError as e:
+                raise e
 
 
 class ReadOnlyParticle:
@@ -68,4 +71,9 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
 
 class ForceGenerator:
     def compute_force(self, particle: ReadOnlyParticle, other_particle: ReadOnlyParticle) -> List[Number]:
+        raise NotImplementedError
+
+
+class ArbitraryLaw:
+    def apply(self, particle: Particle, other_particle: Particle) -> Dict[str, Set[Particle]]:
         raise NotImplementedError
