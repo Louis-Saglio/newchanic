@@ -89,7 +89,8 @@ class Engine:
         for law in self.arbitrary_laws:
             output = law.apply(particle_1, particle_2)
             for feature in self.features:
-                feature.update(output[feature.key])
+                if feature.key in output:
+                    feature.update(output[feature.key])
         total_force = None
         for force_generator in self.force_generators:
             force = force_generator.compute_force(particle_1, particle_2)
