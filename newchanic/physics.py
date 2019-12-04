@@ -75,5 +75,5 @@ class ForceGenerator:
 
 
 class ArbitraryLaw:
-    def apply(self, particle: Particle, other_particle: Particle) -> Dict[str, Set[Particle]]:
+    def apply(self, particle: Particle, other_particle: Particle, engine) -> Dict[str, Set[Particle]]:
         raise NotImplementedError

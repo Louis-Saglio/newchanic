@@ -68,7 +68,7 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
 
 class GraphicalEngine2D(Engine):
-    def __init__(self, window_size: Tuple[Number, Number] = None):
+    def __init__(self, *args, **kwargs):
         self._event_listeners: Dict[int, Union[Callable, Dict[int, Tuple[Callable, Tuple]]]] = {
             pygame.QUIT: self.quit,
             pygame.KEYDOWN: {
@@ -82,10 +82,10 @@ class GraphicalEngine2D(Engine):
             },
         }
         self.particles: List[GraphicalParticle]
-        self.options = GraphicalOptions(window_size)
+        self.options = GraphicalOptions()
         self._window = pygame.display.set_mode(self.options.size)
         self._must_erase = False
-        super().__init__(GraphicalParticle, {"options": self.options})
+        super().__init__(*args, particle_type=GraphicalParticle, particle_kwargs={"options": self.options}, **kwargs)
 
     def run_custom_engine_features(self):
         if self._must_erase:
@@ -136,5 +136,5 @@ class GraphicalEngine2D(Engine):
 
 
 if __name__ == "__main__":
-    engine = GraphicalEngine2D()
+    engine = GraphicalEngine2D(particle_number=200)
     engine.run()
