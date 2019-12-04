@@ -1,6 +1,6 @@
 from math import sqrt
 from random import random
-from typing import List, Type, Dict, Set, Generic, TypeVar
+from typing import List, Type, Dict, Set, Generic, TypeVar, Any
 
 from physics import Particle, ForceGenerator, ReadOnlyParticle, ArbitraryLaw
 from utils import Number
@@ -49,23 +49,23 @@ class RemoveFeature(Feature[Set]):
 
 
 class Engine:
-    def __init__(self, particle_type: Type[Particle] = Particle, particle_kwargs=None):
-        self.particle_kwargs = particle_kwargs
-        self.particle_type = particle_type
-        self.particles: Set[Particle] = self.init_particles()
+    def __init__(self, particle_type: Type[Particle] = Particle, particle_kwargs: Dict[str, Any] = None):
+        self.particles: Set[Particle] = self.init_particles(particle_type, particle_kwargs)
         self.force_generators = self.init_force_generators()
         self.arbitrary_laws = self.init_arbitrary_laws()
-        self._keep_running = True
         self.features = [RemoveFeature()]
+        self._keep_running = True
 
-    def init_particles(self, particle_nbr=200) -> Set[Particle]:
-        # todo : carefully think this generic
+    @staticmethod
+    def init_particles(
+            particle_type: Type[Particle], particle_kwargs: Dict[str, Any], particle_nbr=200
+    ) -> Set[Particle]:
         return {
-            self.particle_type(
-                random_between(1, 100),
-                [random_between(-1000, 1000), random_between(-500, 500)],
-                [0, 0],
-                **(self.particle_kwargs or {})
+            particle_type(
+                mass=random_between(1, 100),
+                position=[random_between(-1000, 1000), random_between(-500, 500)],
+                velocity=[0, 0],
+                **(particle_kwargs or {})
             )
             for _ in range(particle_nbr)
         }
