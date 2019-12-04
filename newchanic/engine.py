@@ -1,6 +1,6 @@
 from math import sqrt
 from random import random
-from typing import List, Type, Dict, Set
+from typing import List, Type, Dict, Set, Generic, TypeVar
 
 from physics import Particle, ForceGenerator, ReadOnlyParticle, ArbitraryLaw
 from utils import Number
@@ -22,10 +22,30 @@ def random_between(param, param1):
     return random() * abs(param - param1) + param
 
 
-class EngineParticle(Particle):
-    def __init__(self, mass: Number, position: List[Number], velocity: List[Number], *args, **kwargs):
-        super().__init__(mass, position, velocity, *args, **kwargs)
-        self.to_remove = False
+T = TypeVar("T")
+
+
+class Feature(Generic[T]):
+    key = None
+
+    def update(self, data: T):
+        raise NotImplementedError
+
+    def __call__(self, engine: "Engine"):
+        raise NotImplementedError
+
+
+class RemoveFeature(Feature[Set]):
+    key = "remove"
+
+    def __init__(self):
+        self.particles_to_remove = set()
+
+    def update(self, data: Set):
+        self.particles_to_remove.update(data)
+
+    def __call__(self, engine: "Engine"):
+        engine.particles -= self.particles_to_remove  # May cause not null total force sum
 
 
 class Engine:
@@ -36,6 +56,7 @@ class Engine:
         self.force_generators = self.init_force_generators()
         self.arbitrary_laws = self.init_arbitrary_laws()
         self._keep_running = True
+        self.features = [RemoveFeature()]
 
     def init_particles(self, particle_nbr=200) -> Set[Particle]:
         # todo : carefully think this generic
@@ -54,31 +75,32 @@ class Engine:
 
     def run(self):
         while self._keep_running:
-            particles_to_remove = set()
             for particle_1 in self.particles:
                 for particle_2 in self.particles:
                     if particle_1 is not particle_2:
-                        for law in self.arbitrary_laws:
-                            output = law.apply(particle_1, particle_2)  # May cause not null total force sum
-                            particles_to_remove.update(output["remove"])
-                        total_force = None
-                        for force_generator in self.force_generators:
-                            force = force_generator.compute_force(particle_1, particle_2)
-                            if total_force is None:
-                                total_force = force
-                            for dimension, (dimensional_total_force, dimensional_force) in enumerate(
-                                zip(total_force, force)
-                            ):
-                                total_force[dimension] = dimensional_total_force + dimensional_force
-                        particle_1.apply_force(total_force, particle_2)
-                        particle_1.run()
-            self.remove_particles(particles_to_remove)
+                        self.manage_particle_interaction(particle_1, particle_2)
+            for feature in self.features:
+                feature(self)
             for particle in self.particles:
                 particle.update()
             self.run_custom_engine_features()
 
-    def remove_particles(self, particles: Set[Particle]):
-        self.particles -= particles
+    def manage_particle_interaction(self, particle_1: Particle, particle_2: Particle):
+        for law in self.arbitrary_laws:
+            output = law.apply(particle_1, particle_2)
+            for feature in self.features:
+                feature.update(output[feature.key])
+        total_force = None
+        for force_generator in self.force_generators:
+            force = force_generator.compute_force(particle_1, particle_2)
+            if total_force is None:
+                total_force = force
+            for dimension, (dimensional_total_force, dimensional_force) in enumerate(
+                    zip(total_force, force)
+            ):
+                total_force[dimension] = dimensional_total_force + dimensional_force
+        particle_1.apply_force(total_force, particle_2)
+        particle_1.run()
 
     @staticmethod
     def init_force_generators() -> List[ForceGenerator]:
