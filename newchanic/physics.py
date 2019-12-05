@@ -49,6 +49,7 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
         self._position = value
 
     def _receive_dimensional_force(self, dimensional_force: Number, dimension: int):
+        # todo : delayed update
         self._velocity[dimension] += dimensional_force / self._mass
 
     def apply_force(self, force: List[Number], other: "Particle"):

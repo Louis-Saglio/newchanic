@@ -1,7 +1,7 @@
 from math import sqrt
 from random import randint
 from tkinter import Tk
-from typing import Tuple, Optional, List, Dict, Callable, Union
+from typing import Tuple, Optional, List, Dict, Callable, Union, Any
 
 import pygame
 
@@ -27,13 +27,13 @@ class CachedPropertiesMixin:
 
 
 class GraphicalOptions:
-    def __init__(self, window_size: Tuple[Number, Number] = None):
-        self.size = self.get_window_size(window_size)
+    def __init__(self, draw_trajectories: bool = False):
+        self.size = self.get_window_size()
         self.zoom_level: Number = 1
         self.represented_dimensions: Tuple[Number, Number] = (0, 1)
         self.background_color = (0, 0, 0)
         self.shift_level = [0, 0]
-        self.draw_trajectories = False
+        self.draw_trajectories = draw_trajectories
 
     @staticmethod
     def get_window_size(window_size: Optional[Tuple[Number, Number]] = None) -> Tuple[Number, Number]:
@@ -68,7 +68,7 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
 
 class GraphicalEngine2D(Engine):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, graphical_options: Dict[str, Any] = None, *args, **kwargs):
         self._event_listeners: Dict[int, Union[Callable, Dict[int, Tuple[Callable, Tuple]]]] = {
             pygame.QUIT: self.quit,
             pygame.KEYDOWN: {
@@ -79,10 +79,11 @@ class GraphicalEngine2D(Engine):
                 pygame.K_LEFT: (self.shift_view, ((100, 0),)),
                 pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
                 pygame.K_SPACE: (self.reset_camera, ()),
+                pygame.K_t: (self.toggle_trajectories_drawing, ()),
             },
         }
         self.particles: List[GraphicalParticle]
-        self.options = GraphicalOptions()
+        self.options = GraphicalOptions(**graphical_options if graphical_options else None)
         self._window = pygame.display.set_mode(self.options.size)
         self._must_erase = False
         super().__init__(*args, particle_type=GraphicalParticle, particle_kwargs={"options": self.options}, **kwargs)
@@ -120,6 +121,9 @@ class GraphicalEngine2D(Engine):
         self.options.shift_level[0], self.options.shift_level[1], self.options.zoom_level = 0, 0, 1
         self._must_erase = True
 
+    def toggle_trajectories_drawing(self):
+        self.options.draw_trajectories = not self.options.draw_trajectories
+
     def update_particles(self):
         particle: GraphicalParticle
         for particle in self.particles:
@@ -136,5 +140,5 @@ class GraphicalEngine2D(Engine):
 
 
 if __name__ == "__main__":
-    engine = GraphicalEngine2D(particle_number=200)
+    engine = GraphicalEngine2D(graphical_options={"draw_trajectories": True}, particle_number=200)
     engine.run()

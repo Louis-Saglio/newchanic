@@ -57,8 +57,9 @@ class Engine:
         get_position: Callable[[int], List[Number]] = lambda _: [
             random_between(-1000, 1000),
             random_between(-500, 500),
+            random_between(-500, 500),
         ],
-        get_velocity: Callable[[int], List[Number]] = lambda _: [0, 0],
+        get_velocity: Callable[[int], List[Number]] = lambda _: [0, 0, 0],
     ):
         self.particles: Set[Particle] = self.init_particles(
             particle_number, particle_type, particle_kwargs, get_mass, get_position, get_velocity
@@ -151,8 +152,8 @@ class Engine:
                     other_particle.delay_update(
                         "_velocity",
                         [
-                            particle._velocity[0] * p_share + other_particle._velocity[0] * o_share,
-                            particle._velocity[1] * p_share + other_particle._velocity[1] * o_share,
+                            p_velocity * p_share + o_velocity * o_share
+                            for p_velocity, o_velocity in zip(particle._velocity, other_particle._velocity)
                         ],
                     )
                     particles_to_remove = {particle}
