@@ -1,7 +1,8 @@
+from itertools import combinations
 from math import sqrt
 from random import randint
-from tkinter import Tk
-from typing import Tuple, Optional, List, Dict, Callable, Union, Any
+from time import time
+from typing import Tuple, List, Dict, Callable, Union, Any
 
 import pygame
 
@@ -27,18 +28,18 @@ class CachedPropertiesMixin:
 
 
 class GraphicalOptions:
-    def __init__(self, draw_trajectories: bool = False):
-        self.size = self.get_window_size()
-        self.zoom_level: Number = 1
-        self.represented_dimensions: Tuple[Number, Number] = (0, 1)
-        self.background_color = (0, 0, 0)
+    def __init__(
+        self, represented_dimensions: Tuple[int, int] = (0, 1), window_size: Tuple[Number, Number] = None,
+    ):
+        self.represented_dimensions: Tuple[Number, Number] = represented_dimensions
+        self.size = window_size or self.get_window_size()
         self.shift_level = [0, 0]
-        self.draw_trajectories = draw_trajectories
+        self.zoom_level: Number = 1
 
     @staticmethod
-    def get_window_size(window_size: Optional[Tuple[Number, Number]] = None) -> Tuple[Number, Number]:
-        if window_size:
-            return window_size
+    def get_window_size() -> Tuple[Number, Number]:
+        from tkinter import Tk
+
         screen = Tk()
         return screen.winfo_screenwidth(), screen.winfo_screenheight()
 
@@ -80,18 +81,30 @@ class GraphicalEngine2D(Engine):
                 pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
                 pygame.K_SPACE: (self.reset_camera, ()),
                 pygame.K_t: (self.toggle_trajectories_drawing, ()),
+                pygame.K_r: (self.rotate_camera, ()),
             },
         }
         self.particles: List[GraphicalParticle]
-        self.options = GraphicalOptions(**graphical_options if graphical_options else None)
-        self._window = pygame.display.set_mode(self.options.size)
         self._must_erase = False
+        self._represented_dimensions_generator = self._build_represented_dimensions_generator()
+        self.background_color = (0, 0, 0)
+        self.draw_trajectories = True
+        self.options = GraphicalOptions(**(graphical_options if graphical_options else {}),)
+        self._window = pygame.display.set_mode(self.options.size)
         super().__init__(*args, particle_type=GraphicalParticle, particle_kwargs={"options": self.options}, **kwargs)
+        self.options.represented_dimensions = next(self._represented_dimensions_generator)
+
+    def detect_dimensions_number(self):
+        if not self.particles:
+            raise RuntimeError(
+                "Unable to detect the number of dimensions because no particle has been added to the engine"
+            )
+        return max([len(p.position) for p in self.particles])
 
     def run_custom_engine_features(self):
         if self._must_erase:
             self.erase_particles()
-        self._must_erase = not self.options.draw_trajectories
+        self._must_erase = not self.draw_trajectories
         self.update_particles()
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -122,7 +135,16 @@ class GraphicalEngine2D(Engine):
         self._must_erase = True
 
     def toggle_trajectories_drawing(self):
-        self.options.draw_trajectories = not self.options.draw_trajectories
+        self.draw_trajectories = not self.draw_trajectories
+
+    def rotate_camera(self):
+        self.options.represented_dimensions = next(self._represented_dimensions_generator)
+        self._must_erase = True
+
+    def _build_represented_dimensions_generator(self):
+        while True:
+            for represented_dimensions in combinations(range(self.detect_dimensions_number()), 2):
+                yield represented_dimensions
 
     def update_particles(self):
         particle: GraphicalParticle
@@ -136,9 +158,15 @@ class GraphicalEngine2D(Engine):
             )
 
     def erase_particles(self):
-        self._window.fill(self.options.background_color)
+        self._window.fill(self.background_color)
 
 
 if __name__ == "__main__":
-    engine = GraphicalEngine2D(graphical_options={"draw_trajectories": True}, particle_number=200)
-    engine.run()
+
+    def main():
+        engine = GraphicalEngine2D(graphical_options={}, particle_number=50)
+        start = time()
+        turn_number = engine.run()
+        print(f"{round((time() - start) / turn_number, 3)} seconds by turn")
+
+    main()

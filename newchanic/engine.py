@@ -26,8 +26,6 @@ T = TypeVar("T")
 
 
 class Feature(Generic[T]):
-    key = None
-
     def update(self, data: T):
         raise NotImplementedError
 
@@ -89,6 +87,7 @@ class Engine:
         pass
 
     def run(self):
+        i = 0
         while self._keep_running:
             for particle_1 in self.particles:
                 for particle_2 in self.particles:
@@ -99,6 +98,8 @@ class Engine:
             for particle in self.particles:
                 particle.update()
             self.run_custom_engine_features()
+            i += 1
+        return i
 
     def manage_particle_interaction(self, particle_1: Particle, particle_2: Particle):
         for law in self.arbitrary_laws:
