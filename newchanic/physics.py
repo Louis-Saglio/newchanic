@@ -4,6 +4,7 @@ from utils import Number
 
 
 class DelayedUpdateMixin:
+    # todo : move to utils
     def __init__(self):
         self._next_values = {}
 

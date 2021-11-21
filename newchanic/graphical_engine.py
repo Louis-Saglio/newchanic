@@ -12,6 +12,7 @@ from utils import Number
 
 
 class CachedPropertiesMixin:
+    # todo : move to utils
     def get_or_create(self, attr: str):
         try:
             return self.get_cached(attr)
@@ -38,10 +39,8 @@ class GraphicalOptions:
 
     @staticmethod
     def get_window_size() -> Tuple[Number, Number]:
-        from tkinter import Tk
-
-        screen = Tk()
-        return screen.winfo_screenwidth(), screen.winfo_screenheight()
+        info = pygame.display.Info()
+        return info.current_w, info.current_h
 
 
 class GraphicalParticle(Particle, CachedPropertiesMixin):
@@ -70,13 +69,14 @@ class GraphicalParticle(Particle, CachedPropertiesMixin):
 
 class GraphicalEngine2D(Engine):
     def __init__(self, graphical_options: Dict[str, Any] = None, *args, **kwargs):
+        pygame.init()
         self._event_listeners: Dict[int, Union[Callable, Dict[int, Tuple[Callable, Tuple]]]] = {
             pygame.QUIT: self.quit,
             pygame.KEYDOWN: {
                 pygame.K_KP_MINUS: (self.zoom, (1.1,)),
                 pygame.K_KP_PLUS: (self.zoom, (0.9,)),
-                pygame.K_UP: (self.shift_view, ((0, 100),)),
-                pygame.K_DOWN: (self.shift_view, ((0, -100),)),
+                pygame.K_UP: (self.shift_view, ((0, -100),)),
+                pygame.K_DOWN: (self.shift_view, ((0, +100),)),
                 pygame.K_LEFT: (self.shift_view, ((100, 0),)),
                 pygame.K_RIGHT: (self.shift_view, ((-100, 0),)),
                 pygame.K_SPACE: (self.reset_camera, ()),
