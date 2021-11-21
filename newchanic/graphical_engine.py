@@ -159,14 +159,3 @@ class GraphicalEngine2D(Engine):
 
     def erase_particles(self):
         self._window.fill(self.background_color)
-
-
-if __name__ == "__main__":
-
-    def main():
-        engine = GraphicalEngine2D(graphical_options={}, particle_number=50)
-        start = time()
-        turn_number = engine.run()
-        print(f"{round((time() - start) / turn_number, 3)} seconds by turn")
-
-    main()

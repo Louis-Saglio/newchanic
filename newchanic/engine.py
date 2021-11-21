@@ -1,20 +1,11 @@
-from math import sqrt
+from __future__ import annotations
+
 from random import random
-from typing import List, Type, Dict, Set, Generic, TypeVar, Any, Callable
+from typing import List, Type, Dict, Set, Generic, TypeVar, Any, Callable, Tuple
 
-from physics import Particle, ForceGenerator, ReadOnlyParticle, ArbitraryLaw
+from newchanic.physics import ForceGenerator
+from physics import Particle, ArbitraryLaw
 from utils import Number
-
-
-def dist(delta_x, delta_y):
-    return sqrt(delta_x ** 2 + delta_y ** 2)
-
-
-def compute_multi_dimensional_distance(position_1, position_2):
-    first = dist(position_1[0] - position_2[0], position_2[1] - position_1[1])
-    for p1, p2 in zip(position_1[2:], position_2[2:]):
-        first = dist(first, p1 - p2)
-    return first
 
 
 def random_between(param, param1):
@@ -29,7 +20,7 @@ class Feature(Generic[T]):
     def update(self, data: T):
         raise NotImplementedError
 
-    def __call__(self, engine: "Engine"):
+    def __call__(self, engine: Engine):
         raise NotImplementedError
 
 
@@ -40,7 +31,7 @@ class RemoveFeature(Feature[Set]):
     def update(self, data: Set[Particle]):
         self.particles_to_remove.update(data)
 
-    def __call__(self, engine: "Engine"):
+    def __call__(self, engine: Engine):
         engine.particles -= self.particles_to_remove  # May cause not null total force sum
         self.particles_to_remove.clear()
 
@@ -58,12 +49,14 @@ class Engine:
             random_between(-500, 500),
         ],
         get_velocity: Callable[[int], List[Number]] = lambda _: [0, 0, 0],
+        force_generators: Tuple[ForceGenerator] = (),
+        arbitrary_laws: Tuple[ArbitraryLaw] = (),
     ):
         self.particles: Set[Particle] = self.init_particles(
             particle_number, particle_type, particle_kwargs, get_mass, get_position, get_velocity
         )
-        self.force_generators = self.init_force_generators()
-        self.arbitrary_laws = self.init_arbitrary_laws()
+        self.force_generators = force_generators
+        self.arbitrary_laws = arbitrary_laws
         self.features = {"remove": RemoveFeature()}
         self._keep_running = True
 
@@ -115,52 +108,3 @@ class Engine:
                 total_force[dimension] = dimensional_total_force + dimensional_force
         particle_1.apply_force(total_force, particle_2)
         particle_1.run()
-
-    @staticmethod
-    def init_force_generators() -> List[ForceGenerator]:
-        class Gravity(ForceGenerator):
-            g = 0.005
-
-            def compute_force(self, particle: ReadOnlyParticle, other_particle: ReadOnlyParticle) -> List[Number]:
-                distance = compute_multi_dimensional_distance(particle.position, other_particle.position)
-                force = self.g * particle.mass * other_particle.mass / distance ** 2
-                vector_force = []
-                for p1_dimensional_position, p2_dimensional_position in zip(particle.position, other_particle.position):
-                    vector_force.append((p1_dimensional_position - p2_dimensional_position) * force / distance)
-                return vector_force
-
-        return [Gravity()]
-
-    @staticmethod
-    def init_arbitrary_laws() -> List[ArbitraryLaw]:
-        umd = 3  # universal minimum distance
-
-        class Merge(ArbitraryLaw):
-            def apply(self, particle: Particle, other_particle: Particle, engine: "Engine") -> Dict[str, Set[Particle]]:
-                if particle.mass > other_particle.mass:
-                    particle, other_particle = other_particle, particle
-                if (
-                    other_particle not in engine.features["remove"].particles_to_remove
-                    and compute_multi_dimensional_distance(particle.position, other_particle.position) < umd
-                    # < other_particle.compute_size() + particle.compute_size()
-                ):
-                    total_mass = particle.mass + other_particle.mass
-                    p_share = particle.mass / total_mass
-                    o_share = other_particle.mass / total_mass
-                    # todo : Move position to the weighted mean of the two particles
-                    other_particle.delay_update("_mass", total_mass)
-                    # noinspection PyProtectedMember
-                    other_particle.delay_update(
-                        "_velocity",
-                        [
-                            p_velocity * p_share + o_velocity * o_share
-                            for p_velocity, o_velocity in zip(particle._velocity, other_particle._velocity)
-                        ],
-                    )
-                    particles_to_remove = {particle}
-                else:
-                    particles_to_remove = {}
-
-                return {"remove": particles_to_remove}
-
-        return [Merge()]
