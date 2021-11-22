@@ -87,20 +87,22 @@ class Engine:
             input_queue, output_queue = Queue(1), Queue(1)
             processes.append(
                 {
-                    'process': Process(target=process_particle_interaction, args=(input_queue, output_queue, self.force_generators)),
-                    'input_queue': input_queue,
-                    'output_queue': output_queue,
+                    "process": Process(
+                        target=process_particle_interaction, args=(input_queue, output_queue, self.force_generators)
+                    ),
+                    "input_queue": input_queue,
+                    "output_queue": output_queue,
                 }
             )
-        [process['process'].start() for process in processes]
+        [process["process"].start() for process in processes]
         i = 0
         while self._keep_running:
             items_by_process = split_into_lists(list(self.particles), process_nbr)
             for process, items in zip(processes, items_by_process):
-                process['input_queue'].put((items, self.particles))
+                process["input_queue"].put((items, self.particles))
             particles = set()
             for process in processes:
-                particles.update(process['output_queue'].get())
+                particles.update(process["output_queue"].get())
             self.particles = particles
             self.run_custom_engine_features()
             i += 1
@@ -150,7 +152,9 @@ def process_particle_interaction(input_queue: Queue, output_queue: Queue, force_
                         force = force_generator.compute_force(particle_1, particle_2)
                         if total_force is None:
                             total_force = force
-                        for dimension, (dimensional_total_force, dimensional_force) in enumerate(zip(total_force, force)):
+                        for dimension, (dimensional_total_force, dimensional_force) in enumerate(
+                            zip(total_force, force)
+                        ):
                             total_force[dimension] = dimensional_total_force + dimensional_force
                     particle_1.apply_force(total_force, particle_2)
                     particle_1.run()

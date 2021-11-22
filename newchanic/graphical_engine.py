@@ -30,7 +30,9 @@ class CachedPropertiesMixin:
 
 class GraphicalOptions:
     def __init__(
-        self, represented_dimensions: Tuple[int, int] = (0, 1), window_size: Tuple[Number, Number] = None,
+        self,
+        represented_dimensions: Tuple[int, int] = (0, 1),
+        window_size: Tuple[Number, Number] = None,
     ):
         self.represented_dimensions: Tuple[Number, Number] = represented_dimensions
         self.size = window_size or self.get_window_size()
@@ -89,7 +91,9 @@ class GraphicalEngine2D(Engine):
         self._represented_dimensions_generator = self._build_represented_dimensions_generator()
         self.background_color = (0, 0, 0)
         self.draw_trajectories = True
-        self.options = GraphicalOptions(**(graphical_options if graphical_options else {}),)
+        self.options = GraphicalOptions(
+            **(graphical_options if graphical_options else {}),
+        )
         self._window = pygame.display.set_mode(self.options.size)
         super().__init__(*args, particle_type=GraphicalParticle, particle_kwargs={"options": self.options}, **kwargs)
         self.options.represented_dimensions = next(self._represented_dimensions_generator)

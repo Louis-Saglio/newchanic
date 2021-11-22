@@ -16,7 +16,7 @@ def compute_multi_dimensional_distance(position_1, position_2):
     return first
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def split_into_lists(items: List[T], nbr: int) -> List[List[T]]:
