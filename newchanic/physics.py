@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Dict, Set
 
 from utils import Number
@@ -53,7 +55,7 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
         # todo : delayed update
         self._velocity[dimension] += dimensional_force / self._mass
 
-    def apply_force(self, force: List[Number], other: "Particle"):
+    def apply_force(self, force: List[Number], other: Particle):
         assert len(force) == len(self._velocity)
         for dimension, dimensional_force in enumerate(force):
             other._receive_dimensional_force(dimensional_force, dimension)
@@ -68,7 +70,7 @@ class Particle(DelayedUpdateMixin, ReadOnlyParticle):
     def __repr__(self):
         velocity = [round(v, 3) for v in self._velocity]
         position = [round(p, 3) for p in self._position]
-        return f"{self.__class__.__name__}(mass={self.mass}, velocity={velocity}, position={position})"
+        return f"{self.__class__.__name__}(mass={round(self.mass, 3)}, velocity={velocity}, position={position})"
 
 
 class ForceGenerator:

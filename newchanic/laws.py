@@ -20,7 +20,7 @@ class Gravity(ForceGenerator):
 class Merge(ArbitraryLaw):
     umd = 3
 
-    def apply(self, particle: Particle, other_particle: Particle, engine: "Engine") -> Dict[str, Set[Particle]]:
+    def apply(self, particle: Particle, other_particle: Particle, engine: Engine) -> Dict[str, Set[Particle]]:
         if particle.mass > other_particle.mass:
             particle, other_particle = other_particle, particle
         if (
