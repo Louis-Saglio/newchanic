@@ -1,19 +1,12 @@
 from __future__ import annotations
 
 from multiprocessing import Process, Queue
-from random import random
 from typing import List, Type, Dict, Set, Generic, TypeVar, Any, Callable, Tuple
 
 from newchanic.physics import ForceGenerator
-from newchanic.utils import split_into_lists
+from newchanic.utils import split_into_lists, random_between
 from physics import Particle, ArbitraryLaw
 from utils import Number
-
-
-def random_between(param, param1):
-    assert param < param1
-    return random() * abs(param - param1) + param
-
 
 T = TypeVar("T")
 
@@ -83,35 +76,30 @@ class Engine:
     def run_custom_engine_features(self):
         pass
 
-    def run_multiprocess(self, process_nbr: int) -> int:
+    def run_multicore(self, core_nbr: int) -> int:
         # todo : find out how many cores are best
-        processes = []
-        for i in range(process_nbr):
-            # todo : use only one input queue and one output queue for all workers
-            input_queue, output_queue = Queue(), Queue()
-            processes.append(
-                {
-                    "process": Process(
-                        target=process_particle_interaction,
-                        args=(input_queue, output_queue, self.force_generators),
-                    ),
-                    "input_queue": input_queue,
-                    "output_queue": output_queue,
-                }
+        workers = []
+        input_queue, output_queue = Queue(), Queue()
+        for i in range(core_nbr):
+            workers.append(
+                Process(
+                    target=process_particle_interaction,
+                    args=(input_queue, output_queue, self.force_generators),
+                )
             )
-        [process["process"].start() for process in processes]
+        [worker.start() for worker in workers]
         i = 0
         while self._keep_running:
-            items_by_process = split_into_lists(list(self.particles), process_nbr)
-            for process, items in zip(processes, items_by_process):
-                process["input_queue"].put((items, self.particles))
+            items_by_worker = split_into_lists(list(self.particles), core_nbr)
+            for items in items_by_worker:
+                input_queue.put((items, self.particles))
             particles = set()
-            for process in processes:
-                particles.update(process["output_queue"].get())
+            for _ in items_by_worker:
+                particles.update(output_queue.get())
             self.particles = particles
             self.run_custom_engine_features()
             i += 1
-        [process["input_queue"].put(Engine.STOP_FLAG) for process in processes]
+        [input_queue.put(Engine.STOP_FLAG) for _ in workers]
         return i
 
     def run(self) -> int:

@@ -1,5 +1,6 @@
 from itertools import cycle
 from math import sqrt
+from random import random
 from typing import Union, TypeVar, List
 
 Number = Union[int, float]
@@ -32,3 +33,8 @@ def split_into_lists(items: List[T], nbr: int) -> List[List[T]]:
         for item, list_ in zip(items[upper_bound:], cycle(lists)):
             list_.append(item)
     return lists
+
+
+def random_between(param, param1):
+    assert param < param1
+    return random() * abs(param - param1) + param
