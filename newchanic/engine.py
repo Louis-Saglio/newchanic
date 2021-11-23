@@ -39,6 +39,8 @@ class RemoveFeature(Feature[Set]):
 
 
 class Engine:
+    STOP_FLAG = "stop_flag"
+
     def __init__(
         self,
         particle_number: int,
@@ -82,13 +84,16 @@ class Engine:
         pass
 
     def run_multiprocess(self, process_nbr: int) -> int:
+        # todo : find out how many cores are best
         processes = []
         for i in range(process_nbr):
-            input_queue, output_queue = Queue(1), Queue(1)
+            # todo : use only one input queue and one output queue for all workers
+            input_queue, output_queue = Queue(), Queue()
             processes.append(
                 {
                     "process": Process(
-                        target=process_particle_interaction, args=(input_queue, output_queue, self.force_generators)
+                        target=process_particle_interaction,
+                        args=(input_queue, output_queue, self.force_generators),
                     ),
                     "input_queue": input_queue,
                     "output_queue": output_queue,
@@ -106,6 +111,7 @@ class Engine:
             self.particles = particles
             self.run_custom_engine_features()
             i += 1
+        [process["input_queue"].put(Engine.STOP_FLAG) for process in processes]
         return i
 
     def run(self) -> int:
@@ -140,8 +146,10 @@ class Engine:
 
 
 def process_particle_interaction(input_queue: Queue, output_queue: Queue, force_generators: Tuple[ForceGenerator]):
-    for i in range(1000):
+    while True:
         data = input_queue.get()
+        if data == Engine.STOP_FLAG:
+            break
         particles_to_process: List[Particle] = data[0]
         particles: Set[Particle] = data[1]
         for particle_1 in particles_to_process:
